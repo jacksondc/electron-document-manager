@@ -1,6 +1,6 @@
 {
   "name": "electron-document-manager",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Manages opening and saving documents in Electron apps",
   "main": "main.js",
   "scripts": {
