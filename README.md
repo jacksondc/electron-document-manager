@@ -1,5 +1,5 @@
 # electron-document-manager
-electron-document-manager is an electron package that manages opening, saving and closing documents. All you have to do is drop in your web app, define `setContent` and `getContent` methods, and electron-document-manager will manage the rest – including everything in the main process.
+electron-document-manager is an [Electron](https://github.com/atom/electron) package that manages opening, saving and closing documents. All you have to do is drop in your web app, define `setContent` and `getContent` methods, and electron-document-manager will manage the rest – including everything in the main process.
 
 ## Example Use
 ### Main Process
