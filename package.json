@@ -12,6 +12,7 @@
   "author": "Jackson de Campos <jackson@jacksondc.com> (http://jacksondc.com)",
   "license": "MIT",
   "dependencies": {
+    "async": "^1.5.2",
     "jquery": "^2.2.0",
     "lodash": "^4.0.0"
   }
