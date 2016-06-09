@@ -6,8 +6,6 @@ const BrowserWindow = electron.BrowserWindow;
 const path = require('path');
 const _ = require('lodash');
 
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
 var windows = [];
 var untitledIndex = 1;
 var indexFile;
@@ -35,46 +33,53 @@ function createWindow(options) {
   }
 
   // Create the browser window.
-  var window = new BrowserWindow(parameters);
-  windows.push(window);
+  var win = new BrowserWindow(parameters);
+  windows.push(win);
 
   // and load the index.html of the app.
-  window.loadURL(indexFile);
+  win.loadURL(indexFile);
 
-  if(options.filename) {
-    window.setRepresentedFilename(options.filename);
-  }
-
-  if(options.fileContent) {
-    window.webContents.on('did-finish-load', function() {
-      window.webContents.send('set-content', options.fileContent);
-      window.webContents.send('set-filepath', options.filepath);
-    });
-  }
+  win.webContents.on('did-finish-load', function() {
+    setUpWindow(win, options.filepath, options.fileContent);
+  });
 
   // Emitted when the window is closed.
-  window.on('closed', function() {
+  win.on('closed', function() {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    window = null;
-    windows = _.without(windows, null); //get rid of null windows
+    windows = _.without(windows, win);
   });
 
   if(focusUpdateHandler) {
     focusUpdateHandler();
-    window.on('focus', focusUpdateHandler);
-    window.on('blur', focusUpdateHandler);
+    win.on('focus', focusUpdateHandler);
+    win.on('blur', focusUpdateHandler);
+  }
+}
+
+function setUpWindow(win, filepath, contents) {
+  if(filepath) {
+    win.webContents.send('set-filepath', filepath);
+    win.setRepresentedFilename(filepath);
+    win.setTitle(path.basename(filepath));
+  }
+  if(contents) {
+    win.webContents.send('set-content', contents);
   }
 }
 
 module.exports = {
   createWindow: createWindow,
+  setUpWindow: setUpWindow,
   //note: focus and blur handlers will only apply to future windows at creation
   setFocusUpdateHandler: function(func) {
     focusUpdateHandler = func;
   },
   initializeWithEntryPoint: function(entryPointArg) {
     indexFile = entryPointArg;
+  },
+  getWindows: function() {
+    return windows;
   }
 };

@@ -3,9 +3,9 @@
 const electron = require('electron');
 const dialog = electron.dialog;
 const BrowserWindow = electron.BrowserWindow;
-const ipcMain = electron.ipcMain;
 const path = require('path');
 const async = require('async');
+const ipcHelper = require('./ipcHelper');
 
 var fs = require("fs");
 
@@ -22,24 +22,16 @@ function isEdited(filepath, content) {
 	}
 }
 
-function requestFromRenderer(variable, callback) {
-	BrowserWindow.getFocusedWindow().webContents.send('request-' + variable, 'request-' + variable + '-finished');
-
-	//remove all listeners, because otherwise we'll start calling old callbacks
-	ipcMain.removeAllListeners('request-' + variable + '-finished');
-	ipcMain.on('request-' + variable + '-finished', callback);
-}
-
 // requests filename and content from current browser window
 function getFilepathAndContent(cb) {
 	async.parallel({
     'content': function(callback) {
-			requestFromRenderer('content', function(event, content) {
+			ipcHelper.requestFromRenderer(BrowserWindow.getFocusedWindow(), 'content', function(event, content) {
 				callback(null, content);
 			});
     },
     'filepath': function(callback) {
-			requestFromRenderer('filepath', function(event, filepath) {
+			ipcHelper.requestFromRenderer(BrowserWindow.getFocusedWindow(), 'filepath', function(event, filepath) {
 				callback(null, filepath);
 			});
     }
@@ -50,10 +42,11 @@ function getFilepathAndContent(cb) {
 
 // OPEN get path to the file-to-open
 function userOpensHandler(callback) {
+	//check if already open
 	async.parallel({
 		currentContent: function(callback) {
 			if(BrowserWindow.getFocusedWindow()) {
-				requestFromRenderer('content', function(event, currentContent) {
+				ipcHelper.requestFromRenderer(BrowserWindow.getFocusedWindow(), 'content', function(event, currentContent) {
 					callback(null, currentContent);
 				});
 			} else {

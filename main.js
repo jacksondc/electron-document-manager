@@ -3,9 +3,12 @@
 const electron = require('electron');
 const app = electron.app;  // Module to control application life.
 const BrowserWindow = electron.BrowserWindow;
+const async = require('async');
+const _ = require('lodash');
 const menuManager = require('./menuManager');
 const fileManager = require('./fileManager');
 const windowManager = require('./windowManager');
+const ipcHelper = require('./ipcHelper');
 
 var initialize = function(options) {
 
@@ -36,20 +39,44 @@ var initialize = function(options) {
       },
       openMethod: function(item, focusedWindow) {
         fileManager.openFile(function(err, filepath, currentFileContent, openFileContent) {
-          var isEdited = fileManager.fileIsEdited(filepath, currentFileContent);
-          if(BrowserWindow.getFocusedWindow() && !isEdited && currentFileContent === "") {
-            //open in current window
-            BrowserWindow.getFocusedWindow().webContents.send('set-content', openFileContent);
-            BrowserWindow.getFocusedWindow().webContents.send('set-filepath', filepath);
-            BrowserWindow.getFocusedWindow().setRepresentedFilename(filepath);
-          } else {
-            //open in different window
-            windowManager.createWindow({
-              focusedWindow: focusedWindow,
-              fileContent: openFileContent,
-              filepath: filepath
+          //check if open in other window
+          var windows = windowManager.getWindows();
+
+          var checkFilepathFuncs = [];
+          windows.forEach(function(win) {
+            checkFilepathFuncs.push(function(callback) {
+              ipcHelper.requestFromRenderer(win, 'filepath', function(event, winFilepath) {
+                var alreadyOpen = false;
+                if(winFilepath === filepath) {
+                  alreadyOpen = true;
+                  win.focus();
+                }
+                callback(null, alreadyOpen);
+              });
             });
-          }
+          });
+
+          //not sure if ipcHelper response will work with paralle, so doing this in series
+          async.series(checkFilepathFuncs, function(err, results) {
+            if(!_.includes(results, true)) {
+              //not open, do the rest of the stuff
+
+              //check if should open in current window or new
+              var isEdited = fileManager.fileIsEdited(filepath, currentFileContent);
+
+              if(BrowserWindow.getFocusedWindow() && !isEdited && currentFileContent === "") {
+                //open in current window
+                windowManager.setUpWindow(BrowserWindow.getFocusedWindow(), filepath, openFileContent);
+              } else {
+                //open in different window
+                windowManager.createWindow({
+                  focusedWindow: focusedWindow,
+                  fileContent: openFileContent,
+                  filepath: filepath
+                });
+              }
+            }
+          });
         });
       },
       saveMethod: function(item, focusedWindow) {
