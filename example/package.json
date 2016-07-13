@@ -1,0 +1,7 @@
+{
+  "name": "electron-document-manager-example",
+  "version": "0.1.0",
+  "main": "main.js",
+  "dependencies": {
+  }
+}
